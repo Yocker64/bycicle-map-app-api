@@ -7,7 +7,12 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack --config webpack.prod.js",
     "dev": "webpack serve --config webpack.dev.js",
-    "deploy": "git subtree push --prefix dist origin gh-pages"
+    "deploy": "git subtree push --prefix dist origin gh-pages",
+    "postinstall": "npx prisma generate --schema ./prisma-user-database/schema.prisma && npx prisma generate --schema ./prisma-post-database/schema.prisma",
+    "generate": "npx prisma generate --schema ./prisma-user-database/schema.prisma && npx prisma generate --schema ./prisma-post-database/schema.prisma",
+    "migrate": "npx prisma migrate dev --schema ./prisma-user-database/schema.prisma && npx prisma migrate dev --schema ./prisma-post-database/schema.prisma",
+    "studio": "npx prisma studio --schema ./prisma/schema.prisma --port 5555 "
+
   },
   "devDependencies": {
     "css-loader": "^7.1.2",
@@ -17,13 +22,29 @@
     "html-loader": "^5.1.0",
     "html-webpack-plugin": "^5.6.3",
     "prettier": "^3.5.3",
+    "prisma": "^6.19.0",
     "style-loader": "^4.0.0",
     "webpack": "^5.99.6",
     "webpack-cli": "^6.0.1",
     "webpack-dev-server": "^5.2.1"
   },
   "dependencies": {
-    "modern-normalize": "^3.0.1"
+    "@prisma/client": "^6.19.0",
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.8.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-validator": "^7.3.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "modern-normalize": "^3.0.1",
+    "multer": "^2.0.2",
+    "mysql2": "^3.15.3",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "passport-jwt": "^4.0.1",
+    "socket.io": "^4.8.1"
   },
   "eslintConfig": {
     "extends": [
