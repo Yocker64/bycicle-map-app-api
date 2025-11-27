@@ -1,38 +1,123 @@
-const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-const path = require("path");
+require('dotenv').config();
 
+const http = require('http');
+
+const passport = require('passport');
+const express = require('express');
+const cors = require('cors');
+
+const passportConfig = require('./src/utils/configs/passport-config');
+const socketSetup = require('./src/utils/middlewares/socket');
+
+// Import Routes
+const authRoutes = require('./src/routes/authRoutes');
+const usersRoutes = require('./src/routes/usersRoutes');
+const postsRoutes = require('./src/routes/postsRoutes');
+const commentsRoutes = require('./src/routes/commentsRoutes');
+const realmsRoutes = require('./src/routes/realmsRoutes');
+const imagesRoutes = require('./src/routes/imagesRoutes');
+const notificationRoutes = require('./src/routes/notificationsRoutes');
+const searchRoutes = require('./src/routes/searchRoutes');
+
+// Initialize express
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
 
-// Serve static files
-app.use(express.static(path.join(__dirname, "public")));
+// Initialize Socket.IO
+socketSetup(server);
 
-// Simple route
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+// Frontend URL
+const FRONTEND_URL =
+  process.env.NODE_ENV === 'production'
+    ? process.env.FRONTEND_URL
+    : 'http://localhost:5173';
+
+// Configure CORS
+app.use(
+  cors({
+    origin: FRONTEND_URL, // Allow requests from this origin
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Adjust based on your needs
+    credentials: true, // Allow credentials
+  }),
+);
+
+console.log('using frontendurl:', FRONTEND_URL);
+
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', FRONTEND_URL);
+  next();
 });
 
-// Socket.IO connection handler
-io.on("connection", (socket) => {
-  console.log("A user connected");
+app.use(express.json()); // For JSON payloads
+app.use(express.urlencoded({ extended: true })); // For application/x-www-form-urlencoded form-data
 
-  // Handle new messages
-  socket.on("chat message", (msg) => {
-    console.log("Message received:", msg);
-    // Broadcast the message to all connected clients
-    io.emit("chat message", msg);
-  });
+// Initialize Passport configuration
+passportConfig(passport);
 
-  // Handle disconnection
-  socket.on("disconnect", () => {
-    console.log("A user disconnected");
+// Debug middleware
+app.use((req, res, next) => {
+  console.log('Request Header:', req.header); // Log request body to debug
+  console.log('Request Body:', req.body); // Log request body to debug
+  console.log('Request Query:', req.query); // Log request body to debug
+  console.log('Authorization header:', req.headers.authorization);
+  next();
+});
+
+// Public routes for login + signup
+app.use('/auth', authRoutes);
+
+// Authenticated Routes
+app.use(
+  '/users',
+  passport.authenticate('jwt', { session: false }),
+  usersRoutes,
+);
+app.use(
+  '/posts',
+  passport.authenticate('jwt', { session: false }),
+  postsRoutes,
+);
+app.use(
+  '/comments',
+  passport.authenticate('jwt', { session: false }),
+  commentsRoutes,
+);
+app.use(
+  '/realms',
+  passport.authenticate('jwt', { session: false }),
+  realmsRoutes,
+);
+app.use(
+  '/images',
+  passport.authenticate('jwt', { session: false }),
+  imagesRoutes,
+);
+app.use(
+  '/notifications',
+  passport.authenticate('jwt', { session: false }),
+  notificationRoutes,
+);
+app.use(
+  '/search',
+  passport.authenticate('jwt', { session: false }),
+  searchRoutes,
+);
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack); // Log the error stack to the console
+
+  // Determine the status code
+  const statusCode = res.statusCode !== 200 ? res.statusCode : 500;
+
+  // Send JSON response with error details
+  res.status(statusCode).json({
+    success: false,
+    message: err.message || 'Internal Server Error',
   });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+const port = process.env.PORT || 3000;
+server.listen(port, () => {
+  console.log('App listening on port ', port);
 });
